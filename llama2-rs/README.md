@@ -9,8 +9,8 @@
 - Use `clap` crate for command-line interface instead of default Rust cli from standard library.
 
 #### Main Parts
-- The `Configuration` part
-- The `Transformer` part
-- The `Tokenizer` part
-- The `Sampler` part
-- The `Mode` part (Generate/Chat)
+- The `Configuration` part - **DONE**
+- The `Transformer` part - **TODO**
+- The `Tokenizer` part - **TODO**
+- The `Sampler` part - **TODO**
+- The `Mode` part (Generate/Chat) - **TODO**
