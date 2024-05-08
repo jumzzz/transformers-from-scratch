@@ -17,41 +17,53 @@ struct Config {
     seq_len: i32,
 }
 
-struct TransformerWeights {
-    token_embedding_table   : FloatTensor,
-    rms_att_weight          : FloatTensor,
-    rms_ffn_weight          : FloatTensor,
-    wq                      : FloatTensor,
-    wk                      : FloatTensor,
-    wv                      : FloatTensor,
-    wo                      : FloatTensor,
-    w1                      : FloatTensor,
-    w2                      : FloatTensor,
-    w3                      : FloatTensor,
-    rms_final_weight        : FloatTensor,
-    wcls                    : FloatTensor,
-}
+/*
 
-struct RunState {
-    x           : FloatTensor,
-    xb          : FloatTensor, 
-    xb2         : FloatTensor,
-    hb          : FloatTensor,
-    hb2         : FloatTensor,
-    q           : FloatTensor,
-    k           : FloatTensor,
-    v           : FloatTensor,
-    att         : FloatTensor,
-    logits      : FloatTensor,
+Note on Lifetime Elison:
+The function signature now tells Rust that for some lifetime 'a, 
+the function takes two parameters, both of which are string slices 
+that live at least as long as lifetime 'a. The function signature also
+tells Rust that the string slice returned from the function will live at 
+least as long as lifetime 'a. In practice, it means that the lifetime of 
+the reference returned by the longest function is the same as the smaller 
+of the lifetimes of the values referred to by the function arguments. 
+These relationships are what we want Rust to use when analyzing this code.
+
+*/
+struct TransformerWeights<'data> {
+    token_embedding_table   : &'data [f32],
+    rms_att_weight          : &'data [f32],
+    rms_ffn_weight          : &'data [f32],
+    wq                      : &'data [f32],
+    wk                      : &'data [f32],
+    wv                      : &'data [f32],
+    wo                      : &'data [f32],
+    w1                      : &'data [f32],
+    w2                      : &'data [f32],
+    w3                      : &'data [f32],
+    rms_final_weight        : &'data [f32],
+    wcls                    : &'data [f32],
+}
+struct RunState<'data> {
+    x           : &'data [f32],
+    xb          : &'data [f32], 
+    xb2         : &'data [f32],
+    hb          : &'data [f32],
+    hb2         : &'data [f32],
+    q           : &'data [f32],
+    k           : &'data [f32],
+    v           : &'data [f32],
+    att         : &'data [f32],
+    logits      : &'data [f32],
     // kv cache
-    key_cache   : FloatTensor, 
-    value_cache : FloatTensor,
+    key_cache   : &'data [f32], 
+    value_cache : &'data [f32],
 }
 
-struct Transformer {
+struct Transformer<'data> {
     config  : Config,
-    weights : TransformerWeights,
-    state   : RunState,
+    weights : TransformerWeights<'data>,
+    state   : RunState<'data>,
     fd      : i32,          // File Descriptor for memory mapping?
 }
 
