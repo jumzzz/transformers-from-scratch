@@ -16,3 +16,9 @@
 - The `Tokenizer` part - **TODO**
 - The `Sampler` part - **TODO**
 - The `Mode` part (Generate/Chat) - **TODO**
+
+
+### Challenges:
+
+#### Representing Slices to Different Types
+- The model weights data which will come from a file will certainly be represented initially as `&[u8]`. Meanwhile, this needs to be represented as `&[f32]`. The main challenge here is how to safely cast `&[u8]` -> `&[f32]`. This should be done such that we can maintain the ownership of the owner of `&[u8]`.  
