@@ -11,6 +11,7 @@
 #### Main Parts
 - The `Configuration` part - **First Iteration: DONE**
 - Setup debugger for both `llama2.c` and `llama-rs` - **DONE**
+- Read about **Virtual Memory** and **mmap** - **TODO**
 - The `Transformer` part - **TODO**
 - The `Tokenizer` part - **TODO**
 - The `Sampler` part - **TODO**

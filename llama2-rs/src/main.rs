@@ -1,3 +1,5 @@
+use std::os::unix::net::UnixDatagram;
+
 use clap::{Parser,ValueEnum};
 
 // I don't think Vec<f32> is an optimal choice here
@@ -50,6 +52,7 @@ struct Transformer {
     config  : Config,
     weights : TransformerWeights,
     state   : RunState,
+    fd      : i32,          // File Descriptor for memory mapping?
 }
 
 
