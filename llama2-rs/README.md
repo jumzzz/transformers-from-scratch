@@ -1,4 +1,4 @@
-#### llama2-rs
+# llama2-rs
 
 ##### Description:
 - We're already late in the party but we will still attempt to replicate Karpathy's llama2.c in Rust
@@ -19,6 +19,8 @@
 
 
 ### Parsing Model File
+
+#### Header Parsing for `Config`
 First, we fill up the necessary data for the configuration:
 
 ```rust
@@ -34,6 +36,40 @@ struct Config {
 ```
 Which can be derived from the header of `../models/stories15M.bin`
 ![header](assets/header_models.png)
+
+Now to do these, we need a a way to parse raw bytes to i32. Here's the sample implementation
+```rust
+impl Config {
+    fn from_bytes(bytes: &[u8]) -> io::Result<Self> {
+        if bytes.len() < 28 {
+            return Err(io::Error::new(ErrorKind::Other, "Insufficient bytes for Config"));
+        }
+        Ok(Config {
+            dim: Config::to_i32(&bytes[0..4])?,
+            hidden_dim: Config::to_i32(&bytes[4..8])?,
+            n_layers: Config::to_i32(&bytes[8..12])?,
+            n_heads: Config::to_i32(&bytes[12..16])?,
+            n_kv_heads: Config::to_i32(&bytes[16..20])?,
+            vocab_size: Config::to_i32(&bytes[20..24])?,
+            seq_len: Config::to_i32(&bytes[24..28])?,
+        })
+    }
+
+    fn to_i32(bytes: &[u8]) -> io::Result<i32> {
+        bytes.try_into()
+            .map_err(|_| io::Error::new(ErrorKind::InvalidData, "Invalid byte slice"))
+            .map(i32::from_ne_bytes)
+    }
+```
+
+Which allows us to do the following:
+```rust
+    let file = File::open(cli.checkpoint_path)?;
+    let mmap = unsafe { MmapOptions::new().map(&file)? };
+    let config_size = mem::size_of::<Config>();
+    let config = Config::from_bytes(&mmap)?;
+```
+
 
 ### Challenges:
 
