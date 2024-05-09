@@ -18,6 +18,22 @@
 - The `Mode` part (Generate/Chat) - **TODO**
 
 
+### Parsing Model File
+First, we fill up the necessary data for the configuration:
+
+```rust
+struct Config {
+    dim : i32,
+    hidden_dim : i32,
+    n_layers: i32,
+    n_heads: i32,
+    n_kv_heads: i32,
+    vocab_size: i32,
+    seq_len: i32,
+}
+```
+Which can be derived from the header of `../models/stories15M.bin`
+![header](assets/header_models.png)
 ### Challenges:
 
 #### Representing Slices to Different Types
