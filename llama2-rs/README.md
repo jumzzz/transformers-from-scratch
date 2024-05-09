@@ -34,6 +34,7 @@ struct Config {
 ```
 Which can be derived from the header of `../models/stories15M.bin`
 ![header](assets/header_models.png)
+
 ### Challenges:
 
 #### Representing Slices to Different Types

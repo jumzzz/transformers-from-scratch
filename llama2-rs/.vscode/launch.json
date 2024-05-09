@@ -19,7 +19,7 @@
                     "kind": "bin"
                 }
             },
-            "args": ["--checkpoint-path", "model.ckpt"],
+            "args": ["--checkpoint-path", "../models/stories15M.bin"],
             "cwd": "${workspaceFolder}"
         },
         {

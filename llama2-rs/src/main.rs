@@ -1,10 +1,13 @@
-use std::os::unix::net::UnixDatagram;
+use memmap2::{Mmap, MmapOptions};
+use std::fs::File;
+use std::io;
 
+use std::mem;
 use clap::{Parser,ValueEnum};
+use std::io::ErrorKind;
 
 // I don't think Vec<f32> is an optimal choice here
 // But let's worry about that later
-type FloatTensor = Vec<f32>;
 
 
 struct Config {
@@ -16,6 +19,30 @@ struct Config {
     vocab_size: i32,
     seq_len: i32,
 }
+
+impl Config {
+    fn from_bytes(bytes: &[u8]) -> io::Result<Self> {
+        if bytes.len() < 28 {
+            return Err(io::Error::new(ErrorKind::Other, "Insufficient bytes for Config"));
+        }
+        Ok(Config {
+            dim: Config::to_i32(&bytes[0..4])?,
+            hidden_dim: Config::to_i32(&bytes[4..8])?,
+            n_layers: Config::to_i32(&bytes[8..12])?,
+            n_heads: Config::to_i32(&bytes[12..16])?,
+            n_kv_heads: Config::to_i32(&bytes[16..20])?,
+            vocab_size: Config::to_i32(&bytes[20..24])?,
+            seq_len: Config::to_i32(&bytes[24..28])?,
+        })
+    }
+
+    fn to_i32(bytes: &[u8]) -> io::Result<i32> {
+        bytes.try_into()
+            .map_err(|_| io::Error::new(ErrorKind::InvalidData, "Invalid byte slice"))
+            .map(i32::from_ne_bytes)
+    }
+}
+
 
 /*
 
@@ -97,16 +124,23 @@ struct Cli {
     system_prompt: String,
 }
 
-fn main() {
-    let config = Cli::parse();
+fn main() -> io::Result<()>  {
+    let cli = Cli::parse();
 
-    println!("Checkpoint Path: {}", config.checkpoint_path);
-    println!("Tokenizer Path: {}", config.tokenizer_path);
-    println!("Temperature: {}", config.temperature);
-    println!("Top-p: {}", config.topp);
-    println!("Steps: {}", config.steps);
-    println!("Prompt: '{}'", config.prompt);
-    println!("RNG Seed: {}", config.rng_seed);
-    println!("Mode: {:?}", config.mode);
-    println!("System Prompt: '{}'", config.system_prompt);
+    println!("Checkpoint Path: {}", cli.checkpoint_path);
+    println!("Tokenizer Path: {}", cli.tokenizer_path);
+    println!("Temperature: {}", cli.temperature);
+    println!("Top-p: {}", cli.topp);
+    println!("Steps: {}", cli.steps);
+    println!("Prompt: '{}'", cli.prompt);
+    println!("RNG Seed: {}", cli.rng_seed);
+    println!("Mode: {:?}", cli.mode);
+    println!("System Prompt: '{}'", cli.system_prompt);
+    
+    let file = File::open(cli.checkpoint_path)?;
+    let mmap = unsafe { MmapOptions::new().map(&file)? };
+    let config_size = mem::size_of::<Config>();
+    let config = Config::from_bytes(&mmap)?;
+
+    Ok(())
 }
