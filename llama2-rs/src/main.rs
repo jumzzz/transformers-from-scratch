@@ -4,6 +4,7 @@ use std::fs::File;
 use std::io;
 
 use std::mem;
+use std::ptr::slice_from_raw_parts;
 use clap::{Parser,ValueEnum};
 use std::io::ErrorKind;
 
@@ -155,7 +156,8 @@ impl<'a> TransformerWeights <'a> {
                 w1: slice::from_raw_parts(w1.as_ptr() as *const f32, w1.len() / FLOAT_SIZE),
                 w2: slice::from_raw_parts(w2.as_ptr() as *const f32, w2.len() / FLOAT_SIZE),
                 w3: slice::from_raw_parts(w3.as_ptr() as *const f32, w3.len() / FLOAT_SIZE),
-                wcls,       
+                rms_final_weight: slice::from_raw_parts(rms_final_weight.as_ptr() as *const f32, rms_final_weight.len() / FLOAT_SIZE), 
+                wcls: wcls,       
             } 
         }
     }
