@@ -6,9 +6,8 @@ use std::mem;
 use clap::{Parser,ValueEnum};
 use std::io::ErrorKind;
 
-// I don't think Vec<f32> is an optimal choice here
-// But let's worry about that later
-
+// 
+type FloatTensor = Vec<f32>;
 
 struct Config {
     dim : i32,
@@ -27,9 +26,9 @@ impl Config {
         }
         // Define the closure for converting bytes to i32
         let to_i32 = |b: &[u8]| -> io::Result<i32> {
-            b.try_into()
-                .map_err(|_| io::Error::new(ErrorKind::InvalidData, "Invalid byte slice"))
-                .map(i32::from_ne_bytes)
+            b.try_into().map_err(
+                |_| io::Error::new(ErrorKind::InvalidData, "Invalid byte slice")
+            ).map(i32::from_ne_bytes)
         };
         
         Ok(Config {
@@ -57,40 +56,23 @@ of the lifetimes of the values referred to by the function arguments.
 These relationships are what we want Rust to use when analyzing this code.
 
 */
-struct TransformerWeights<'data> {
-    token_embedding_table   : &'data [f32],
-    rms_att_weight          : &'data [f32],
-    rms_ffn_weight          : &'data [f32],
-    wq                      : &'data [f32],
-    wk                      : &'data [f32],
-    wv                      : &'data [f32],
-    wo                      : &'data [f32],
-    w1                      : &'data [f32],
-    w2                      : &'data [f32],
-    w3                      : &'data [f32],
-    rms_final_weight        : &'data [f32],
-    wcls                    : &'data [f32],
-}
-struct RunState<'data> {
-    x           : &'data [f32],
-    xb          : &'data [f32], 
-    xb2         : &'data [f32],
-    hb          : &'data [f32],
-    hb2         : &'data [f32],
-    q           : &'data [f32],
-    k           : &'data [f32],
-    v           : &'data [f32],
-    att         : &'data [f32],
-    logits      : &'data [f32],
-    // kv cache
-    key_cache   : &'data [f32], 
-    value_cache : &'data [f32],
+struct TransformerWeights {
+    token_embedding_table   : FloatTensor, 
+    rms_att_weight          : FloatTensor,
+    rms_ffn_weight          : FloatTensor,
+    wq                      : FloatTensor,
+    wk                      : FloatTensor,
+    wv                      : FloatTensor,
+    wo                      : FloatTensor,
+    w1                      : FloatTensor,
+    w2                      : FloatTensor,
+    w3                      : FloatTensor,
+    rms_final_weight        : FloatTensor,
+    wcls                    : FloatTensor,
 }
 
-struct Transformer<'data> {
+struct Transformer {
     config  : Config,
-    weights : TransformerWeights<'data>,
-    state   : RunState<'data>,
     fd      : i32,          // File Descriptor for memory mapping?
 }
 
