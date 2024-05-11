@@ -60,16 +60,16 @@ These relationships are what we want Rust to use when analyzing this code.
 struct TransformerWeights <'a>{
     token_embedding_table   : &'a [f32], 
     rms_att_weight          : &'a [f32],
-    // rms_ffn_weight          : &'a [f32],
+    rms_ffn_weight          : &'a [f32],
     wq                      : &'a [f32],
-    // wk                      : &'a [f32],
-    // wv                      : &'a [f32],
-    // wo                      : &'a [f32],
-    // w1                      : &'a [f32],
-    // w2                      : &'a [f32],
-    // w3                      : &'a [f32],
-    // rms_final_weight        : &'a [f32],
-    // wcls                    : &'a [f32],
+    wk                      : &'a [f32],
+    wv                      : &'a [f32],
+    wo                      : &'a [f32],
+    w1                      : &'a [f32],
+    w2                      : &'a [f32],
+    w3                      : &'a [f32],
+    rms_final_weight        : &'a [f32],
+    wcls                    : &'a [f32],
 }
 
 impl<'a> TransformerWeights <'a> {
@@ -83,6 +83,8 @@ impl<'a> TransformerWeights <'a> {
             let vocab_size = config.vocab_size as usize;
             let seq_len = config.seq_len as usize;
 
+            let shared_weights = if vocab_size > 0 { true } else { false };
+
             let head_size = dim / n_heads;
             const FLOAT_SIZE: usize = 4; 
 
@@ -95,18 +97,65 @@ impl<'a> TransformerWeights <'a> {
             let rms_att_weight = &data[start..offset];
 
             let start = offset;
-            let offset = start + n_layers * dim * FLOAT_SIZE;
+            let offset = start + n_layers * dim * n_heads * head_size * FLOAT_SIZE;
             let wq = &data[start..offset];
 
             let start = offset;
-            let offset = start + 
+            let offset = start + n_layers * dim * n_kv_heads * head_size * FLOAT_SIZE;
             let wk = &data[start..offset];
 
+            let start = offset;
+            let offset = start + n_layers * dim * n_kv_heads * head_size * FLOAT_SIZE;
+            let wv = &data[start..offset];
+
+            let start = offset;
+            let offset = start + n_layers * n_heads * head_size * dim * FLOAT_SIZE;
+            let wo = &data[start..offset];
+
+            let start = offset;
+            let offset = start + n_layers * dim * FLOAT_SIZE;
+            let rms_ffn_weight = &data[start..offset];
+
+            let start = offset;
+            let offset = start + n_layers * dim * hidden_dim * FLOAT_SIZE;
+            let w1 = &data[start..offset];
+
+            let start = offset;
+            let offset = start + n_layers * hidden_dim * dim * FLOAT_SIZE;
+            let w2 = &data[start..offset];
+
+            let start = offset;
+            let offset = start + n_layers * dim * hidden_dim * FLOAT_SIZE;
+            let w3 = &data[start..offset];
+
+            let start = offset;
+            let offset = start + dim * FLOAT_SIZE;  // Skipping rms_final_weight for now
+            let rms_final_weight = &data[start..offset];
+
+            let start = offset;
+            let offset = start + seq_len * head_size * FLOAT_SIZE / 2; // Skip freq_cis_real
+            let start = offset;
+            let offset = start + seq_len * head_size * FLOAT_SIZE / 2; // Skip freq_cis_imag
+
+            let wcls = if shared_weights {
+                slice::from_raw_parts(token_embedding_table.as_ptr() as *const f32, token_embedding_table.len() / FLOAT_SIZE)
+            } else {
+                let wcls_raw = &data[offset..];
+                slice::from_raw_parts(wcls_raw.as_ptr() as *const f32, wcls_raw.len() / FLOAT_SIZE)
+            };
 
             TransformerWeights {
-                token_embedding_table: slice::from_raw_parts(token_embedding_table.as_ptr() as *const f32, token_embedding_table.len() / 4),
-                rms_att_weight: slice::from_raw_parts(rms_att_weight.as_ptr() as *const f32, rms_att_weight.len() / 4),
-                wq: slice::from_raw_parts(wq.as_ptr() as *const f32, wq.len() / 4)
+                token_embedding_table: slice::from_raw_parts(token_embedding_table.as_ptr() as *const f32, token_embedding_table.len() / FLOAT_SIZE),
+                rms_att_weight: slice::from_raw_parts(rms_att_weight.as_ptr() as *const f32, rms_att_weight.len() / FLOAT_SIZE),
+                rms_ffn_weight : slice::from_raw_parts(rms_ffn_weight.as_ptr() as *const f32, rms_ffn_weight.len() / FLOAT_SIZE),
+                wq: slice::from_raw_parts(wq.as_ptr() as *const f32, wq.len() / FLOAT_SIZE),
+                wk: slice::from_raw_parts(wk.as_ptr() as *const f32, wk.len() / FLOAT_SIZE),
+                wv: slice::from_raw_parts(wv.as_ptr() as *const f32, wv.len() / FLOAT_SIZE),
+                wo: slice::from_raw_parts(wo.as_ptr() as *const f32, wv.len() / FLOAT_SIZE),
+                w1: slice::from_raw_parts(w1.as_ptr() as *const f32, w1.len() / FLOAT_SIZE),
+                w2: slice::from_raw_parts(w2.as_ptr() as *const f32, w2.len() / FLOAT_SIZE),
+                w3: slice::from_raw_parts(w3.as_ptr() as *const f32, w3.len() / FLOAT_SIZE),
+                wcls,       
             } 
         }
     }
