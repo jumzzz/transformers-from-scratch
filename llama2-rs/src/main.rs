@@ -1,4 +1,5 @@
 use memmap2::{Mmap, MmapOptions};
+use core::slice;
 use std::fs::File;
 use std::io;
 
@@ -28,7 +29,7 @@ impl Config {
         let to_i32 = |b: &[u8]| -> io::Result<i32> {
             b.try_into().map_err(
                 |_| io::Error::new(ErrorKind::InvalidData, "Invalid byte slice")
-            ).map(i32::from_ne_bytes)
+            ).map(i32::from_le_bytes)
         };
         
         Ok(Config {
@@ -56,19 +57,59 @@ of the lifetimes of the values referred to by the function arguments.
 These relationships are what we want Rust to use when analyzing this code.
 
 */
-struct TransformerWeights {
-    token_embedding_table   : FloatTensor, 
-    rms_att_weight          : FloatTensor,
-    rms_ffn_weight          : FloatTensor,
-    wq                      : FloatTensor,
-    wk                      : FloatTensor,
-    wv                      : FloatTensor,
-    wo                      : FloatTensor,
-    w1                      : FloatTensor,
-    w2                      : FloatTensor,
-    w3                      : FloatTensor,
-    rms_final_weight        : FloatTensor,
-    wcls                    : FloatTensor,
+struct TransformerWeights <'a>{
+    token_embedding_table   : &'a [f32], 
+    rms_att_weight          : &'a [f32],
+    // rms_ffn_weight          : &'a [f32],
+    wq                      : &'a [f32],
+    // wk                      : &'a [f32],
+    // wv                      : &'a [f32],
+    // wo                      : &'a [f32],
+    // w1                      : &'a [f32],
+    // w2                      : &'a [f32],
+    // w3                      : &'a [f32],
+    // rms_final_weight        : &'a [f32],
+    // wcls                    : &'a [f32],
+}
+
+impl<'a> TransformerWeights <'a> {
+    fn new(data: &'a Mmap, config: &Config) -> Self {
+        unsafe {
+            let dim = config.dim as usize;
+            let hidden_dim = config.hidden_dim as usize;
+            let n_layers = config.n_layers as usize;
+            let n_heads = config.n_heads as usize;
+            let n_kv_heads = config.n_kv_heads as usize;
+            let vocab_size = config.vocab_size as usize;
+            let seq_len = config.seq_len as usize;
+
+            let head_size = dim / n_heads;
+            const FLOAT_SIZE: usize = 4; 
+
+            let start = mem::size_of::<Config>();
+            let offset = start + vocab_size * dim * FLOAT_SIZE;
+            let token_embedding_table = &data[start..offset];
+
+            let start = offset;
+            let offset = start + n_layers * dim * FLOAT_SIZE;
+            let rms_att_weight = &data[start..offset];
+
+            let start = offset;
+            let offset = start + n_layers * dim * FLOAT_SIZE;
+            let wq = &data[start..offset];
+
+            let start = offset;
+            let offset = start + 
+            let wk = &data[start..offset];
+
+
+            TransformerWeights {
+                token_embedding_table: slice::from_raw_parts(token_embedding_table.as_ptr() as *const f32, token_embedding_table.len() / 4),
+                rms_att_weight: slice::from_raw_parts(rms_att_weight.as_ptr() as *const f32, rms_att_weight.len() / 4),
+                wq: slice::from_raw_parts(wq.as_ptr() as *const f32, wq.len() / 4)
+            } 
+        }
+    }
 }
 
 struct Transformer {
@@ -123,6 +164,9 @@ fn main() -> io::Result<()>  {
     let mmap = unsafe { MmapOptions::new().map(&file)? };
     let config_size = mem::size_of::<Config>();
     let config = Config::from_bytes(&mmap)?;
+    let transformer_weights = TransformerWeights::new(&mmap, &config);
+
+
 
     Ok(())
 }
