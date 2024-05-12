@@ -151,7 +151,6 @@ struct TransformerWeights <'a>{
     wcls                    : &'a [f32],
 }
 
-
 impl<'a> TransformerWeights <'a> {
     fn load(data: &'a Mmap, cfg: &Config, max_index: usize) -> Self {
         let index_ranges = TransformerIndexRange::new(cfg, max_index);
@@ -191,7 +190,6 @@ struct Transformer {
     config  : Config,
     fd      : i32,          // File Descriptor for memory mapping?
 }
-
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 enum Mode {
