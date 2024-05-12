@@ -71,65 +71,52 @@ impl<'a> TransformerWeights <'a> {
 
             let start = CONFIG_SIZE_IN_BYTES;
             let end = start + cfg.vocab_size * cfg.dim * FLOAT_SIZE;
-            println!("(token_embedding_table) start = {}, offset = {}", start, end);
             let token_embedding_table = &data[start..end];
 
             let start = end;
             let end = start + cfg.n_layers * cfg.dim * FLOAT_SIZE;
-            println!("(rms_att_weight) start = {}, offset = {}", start, end);            
             let rms_att_weight = &data[start..end];
 
             let start = end;
             let end = start + cfg.n_layers * cfg.dim * cfg.n_heads * head_size * FLOAT_SIZE;
-            println!("(wq) start = {}, offset = {}", start, end);            
             let wq = &data[start..end];
 
             let start = end;
             let end = start + cfg.n_layers * cfg.dim * cfg.n_kv_heads * head_size * FLOAT_SIZE;
-            println!("(wk) start = {}, offset = {}", start, end);            
             let wk = &data[start..end];
 
             let start = end;
             let end = start + cfg.n_layers * cfg.dim * cfg.n_kv_heads * head_size * FLOAT_SIZE;
-            println!("(wv) start = {}, offset = {}", start, end);            
             let wv = &data[start..end];
 
             let start = end;
             let end = start + cfg.n_layers * cfg.n_heads * head_size * cfg.dim * FLOAT_SIZE;
-            println!("(wo) start = {}, offset = {}", start, end);            
             let wo = &data[start..end];
 
             let start = end;
             let end = start + cfg.n_layers * cfg.dim * FLOAT_SIZE;
-            println!("(rms_ffn_weight) start = {}, offset = {}", start, end);            
             let rms_ffn_weight = &data[start..end];
 
             let start = end;
             let end = start + cfg.n_layers * cfg.dim * cfg.hidden_dim * FLOAT_SIZE;
-            println!("(w1) start = {}, offset = {}", start, end);            
             let w1 = &data[start..end];
 
             let start = end;
             let end = start + cfg.n_layers * cfg.hidden_dim * cfg.dim * FLOAT_SIZE;
-            println!("(w2) start = {}, offset = {}", start, end);            
             let w2 = &data[start..end];
 
             let start = end;
             let end = start + cfg.n_layers * cfg.dim * cfg.hidden_dim * FLOAT_SIZE;
-            println!("(w3) start = {}, offset = {}", start, end);            
             let w3 = &data[start..end];
 
             let start = end;
             let end = start + cfg.dim * FLOAT_SIZE;  // Skipping rms_final_weight for now
-            println!("(rms_final_weight) start = {}, offset = {}", start, end);            
             let rms_final_weight = &data[start..end];
 
             let start = end;
             let end = start + cfg.seq_len * head_size * FLOAT_SIZE / 2; // Skip freq_cis_real
-            println!("(freq_cis_real_imag) start = {}, offset = {}", start, end);            
             let start = end;
             let end = start + cfg.seq_len * head_size * FLOAT_SIZE / 2; // Skip freq_cis_imag
-            println!("(wcls) start = {}, offset = {}", start, end);            
 
             let wcls = if shared_weights {
                 slice::from_raw_parts(token_embedding_table.as_ptr() as *const f32, token_embedding_table.len() / FLOAT_SIZE)
