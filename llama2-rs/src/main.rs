@@ -120,18 +120,18 @@ impl TransformerIndexRange {
         let end_wcls = max_index;
 
         TransformerIndexRange {
-            token_embedding_table: IndexRange::new(start_tok_emb_tbl, end_tok_emb_tbl), 
-            rms_att_weight: IndexRange::new(start_rms_att_weight, end_rms_att_weight), 
-            rms_ffn_weight: IndexRange::new(start_rms_ffn_weight, end_rms_ffn_weight),
-            wq: IndexRange::new(start_wq, end_wq),
-            wk: IndexRange::new(start_wk, end_wk),
-            wv: IndexRange::new(start_wv, end_wv),
-            wo: IndexRange::new(start_wo, end_wo),
-            w1: IndexRange::new(start_w1, end_w1),
-            w2: IndexRange::new(start_w2, end_w2),
-            w3: IndexRange::new(start_w3, end_w3),
-            rms_final_weight: IndexRange::new(start_rms_final_weight, end_rms_final_weight),
-            wcls: IndexRange::new(start_wcls, end_wcls),
+            token_embedding_table:  IndexRange::new(start_tok_emb_tbl, end_tok_emb_tbl), 
+            rms_att_weight:         IndexRange::new(start_rms_att_weight, end_rms_att_weight), 
+            rms_ffn_weight:         IndexRange::new(start_rms_ffn_weight, end_rms_ffn_weight),
+            wq:                     IndexRange::new(start_wq, end_wq),
+            wk:                     IndexRange::new(start_wk, end_wk),
+            wv:                     IndexRange::new(start_wv, end_wv),
+            wo:                     IndexRange::new(start_wo, end_wo),
+            w1:                     IndexRange::new(start_w1, end_w1),
+            w2:                     IndexRange::new(start_w2, end_w2),
+            w3:                     IndexRange::new(start_w3, end_w3),
+            rms_final_weight:       IndexRange::new(start_rms_final_weight, end_rms_final_weight),
+            wcls:                   IndexRange::new(start_wcls, end_wcls),
         } 
     }
 }
@@ -170,18 +170,18 @@ impl<'a> TransformerWeights <'a> {
         };
 
         TransformerWeights {
-            token_embedding_table: map_bytes_to_f32(&index_ranges.token_embedding_table), 
-            rms_att_weight: map_bytes_to_f32(&index_ranges.rms_att_weight), 
-            rms_ffn_weight: map_bytes_to_f32(&index_ranges.rms_ffn_weight), 
-            wq: map_bytes_to_f32(&index_ranges.wq), 
-            wk: map_bytes_to_f32(&index_ranges.wk), 
-            wv: map_bytes_to_f32(&index_ranges.wv), 
-            wo: map_bytes_to_f32(&index_ranges.wo), 
-            w1: map_bytes_to_f32(&index_ranges.w1), 
-            w2: map_bytes_to_f32(&index_ranges.w2), 
-            w3: map_bytes_to_f32(&index_ranges.w3), 
-            rms_final_weight: map_bytes_to_f32(&index_ranges.rms_final_weight), 
-            wcls: wcls,       
+            token_embedding_table:  map_bytes_to_f32(&index_ranges.token_embedding_table), 
+            rms_att_weight:         map_bytes_to_f32(&index_ranges.rms_att_weight), 
+            rms_ffn_weight:         map_bytes_to_f32(&index_ranges.rms_ffn_weight), 
+            wq:                     map_bytes_to_f32(&index_ranges.wq), 
+            wk:                     map_bytes_to_f32(&index_ranges.wk), 
+            wv:                     map_bytes_to_f32(&index_ranges.wv), 
+            wo:                     map_bytes_to_f32(&index_ranges.wo), 
+            w1:                     map_bytes_to_f32(&index_ranges.w1), 
+            w2:                     map_bytes_to_f32(&index_ranges.w2), 
+            w3:                     map_bytes_to_f32(&index_ranges.w3), 
+            rms_final_weight:       map_bytes_to_f32(&index_ranges.rms_final_weight), 
+            wcls:                   wcls,       
         } 
     }
 }
