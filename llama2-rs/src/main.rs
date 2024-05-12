@@ -69,59 +69,60 @@ impl<'a> TransformerWeights <'a> {
 
             let head_size = cfg.dim / cfg.n_heads;
 
-            let start = CONFIG_SIZE_IN_BYTES;
-            let end = start + cfg.vocab_size * cfg.dim * FLOAT_SIZE;
-            let token_embedding_table = &data[start..end];
+            let start_tok_emb_tbl = CONFIG_SIZE_IN_BYTES;
+            let end_tok_emb_tbl = start_tok_emb_tbl + cfg.vocab_size * cfg.dim * FLOAT_SIZE;
+            let token_embedding_table = &data[start_tok_emb_tbl..end_tok_emb_tbl];
 
-            let start = end;
-            let end = start + cfg.n_layers * cfg.dim * FLOAT_SIZE;
-            let rms_att_weight = &data[start..end];
+            let start_rms_att_weight = end_tok_emb_tbl;
+            let end_rms_att_weight = start_rms_att_weight + cfg.n_layers * cfg.dim * FLOAT_SIZE;
+            let rms_att_weight = &data[start_rms_att_weight..end_rms_att_weight];
 
-            let start = end;
-            let end = start + cfg.n_layers * cfg.dim * cfg.n_heads * head_size * FLOAT_SIZE;
-            let wq = &data[start..end];
+            let start_wq = end_rms_att_weight;
+            let end_wq = start_wq + cfg.n_layers * cfg.dim * cfg.n_heads * head_size * FLOAT_SIZE;
+            let wq = &data[start_wq..end_wq];
 
-            let start = end;
-            let end = start + cfg.n_layers * cfg.dim * cfg.n_kv_heads * head_size * FLOAT_SIZE;
-            let wk = &data[start..end];
+            let start_wk = end_wq;
+            let end_wk = start_wk + cfg.n_layers * cfg.dim * cfg.n_kv_heads * head_size * FLOAT_SIZE;
+            let wk = &data[start_wk..end_wk];
 
-            let start = end;
-            let end = start + cfg.n_layers * cfg.dim * cfg.n_kv_heads * head_size * FLOAT_SIZE;
-            let wv = &data[start..end];
+            let start_wv = end_wk;
+            let end_wv = start_wv + cfg.n_layers * cfg.dim * cfg.n_kv_heads * head_size * FLOAT_SIZE;
+            let wv = &data[start_wv..end_wv];
 
-            let start = end;
-            let end = start + cfg.n_layers * cfg.n_heads * head_size * cfg.dim * FLOAT_SIZE;
-            let wo = &data[start..end];
+            let start_wo = end_wv;
+            let end_wo = start_wo + cfg.n_layers * cfg.n_heads * head_size * cfg.dim * FLOAT_SIZE;
+            let wo = &data[start_wo..end_wo];
 
-            let start = end;
-            let end = start + cfg.n_layers * cfg.dim * FLOAT_SIZE;
-            let rms_ffn_weight = &data[start..end];
+            let start_rms_ffn_weight = end_wo;
+            let end_rms_ffn_weight = start_rms_ffn_weight + cfg.n_layers * cfg.dim * FLOAT_SIZE;
+            let rms_ffn_weight = &data[start_rms_ffn_weight..end_rms_ffn_weight];
 
-            let start = end;
-            let end = start + cfg.n_layers * cfg.dim * cfg.hidden_dim * FLOAT_SIZE;
-            let w1 = &data[start..end];
+            let start_w1 = end_rms_ffn_weight;
+            let end_w1 = start_w1 + cfg.n_layers * cfg.dim * cfg.hidden_dim * FLOAT_SIZE;
+            let w1 = &data[start_w1..end_w1];
 
-            let start = end;
-            let end = start + cfg.n_layers * cfg.hidden_dim * cfg.dim * FLOAT_SIZE;
-            let w2 = &data[start..end];
+            let start_w2 = end_w1;
+            let end_w2 = start_w2 + cfg.n_layers * cfg.hidden_dim * cfg.dim * FLOAT_SIZE;
+            let w2 = &data[start_w2..end_w2];
 
-            let start = end;
-            let end = start + cfg.n_layers * cfg.dim * cfg.hidden_dim * FLOAT_SIZE;
-            let w3 = &data[start..end];
+            let start_w3 = end_w2;
+            let end_w3 = start_w3 + cfg.n_layers * cfg.dim * cfg.hidden_dim * FLOAT_SIZE;
+            let w3 = &data[start_w3..end_w3];
 
-            let start = end;
-            let end = start + cfg.dim * FLOAT_SIZE;  // Skipping rms_final_weight for now
-            let rms_final_weight = &data[start..end];
+            let start_rms_final_weight = end_w3;
+            let end_rms_final_weight = start_rms_final_weight + cfg.dim * FLOAT_SIZE;  // Skipping rms_final_weight for now
+            let rms_final_weight = &data[start_rms_final_weight..end_rms_final_weight];
 
-            let start = end;
-            let end = start + cfg.seq_len * head_size * FLOAT_SIZE / 2; // Skip freq_cis_real
-            let start = end;
-            let end = start + cfg.seq_len * head_size * FLOAT_SIZE / 2; // Skip freq_cis_imag
+            let start_freq_cis_real = end_rms_final_weight;
+            let end_freq_cis_real = start_freq_cis_real + cfg.seq_len * head_size * FLOAT_SIZE / 2; // Skip freq_cis_real
+            let start_freq_cis_img = end_freq_cis_real;
+            let end_freq_cis_img = start_freq_cis_img + cfg.seq_len * head_size * FLOAT_SIZE / 2; // Skip freq_cis_imag
+            println!("(wcls) start = {}, offset = {}", start_freq_cis_img, end_freq_cis_img);            
 
             let wcls = if shared_weights {
                 slice::from_raw_parts(token_embedding_table.as_ptr() as *const f32, token_embedding_table.len() / FLOAT_SIZE)
             } else {
-                let wcls_raw = &data[end..];
+                let wcls_raw = &data[end_freq_cis_img..];
                 slice::from_raw_parts(wcls_raw.as_ptr() as *const f32, wcls_raw.len() / FLOAT_SIZE)
             };
 
