@@ -64,53 +64,42 @@ struct TransformerWeights <'a>{
 
 
 impl<'a> TransformerWeights <'a> {
-    fn new(data: &'a Mmap, cfg: &Config, max_index: usize) -> Self {
+    fn load(data: &'a Mmap, cfg: &Config, max_index: usize) -> Self {
 
         let head_size = cfg.dim / cfg.n_heads;
 
         let start_tok_emb_tbl = CONFIG_SIZE_IN_BYTES;
         let end_tok_emb_tbl = start_tok_emb_tbl + cfg.vocab_size * cfg.dim * FLOAT_SIZE;
-        // let token_embedding_table = &data[start_tok_emb_tbl..end_tok_emb_tbl];
 
         let start_rms_att_weight = end_tok_emb_tbl;
         let end_rms_att_weight = start_rms_att_weight + cfg.n_layers * cfg.dim * FLOAT_SIZE;
-        // let rms_att_weight = &data[start_rms_att_weight..end_rms_att_weight];
 
         let start_wq = end_rms_att_weight;
         let end_wq = start_wq + cfg.n_layers * cfg.dim * cfg.n_heads * head_size * FLOAT_SIZE;
-        // let wq = &data[start_wq..end_wq];
 
         let start_wk = end_wq;
         let end_wk = start_wk + cfg.n_layers * cfg.dim * cfg.n_kv_heads * head_size * FLOAT_SIZE;
-        // let wk = &data[start_wk..end_wk];
 
         let start_wv = end_wk;
         let end_wv = start_wv + cfg.n_layers * cfg.dim * cfg.n_kv_heads * head_size * FLOAT_SIZE;
-        // let wv = &data[start_wv..end_wv];
 
         let start_wo = end_wv;
         let end_wo = start_wo + cfg.n_layers * cfg.n_heads * head_size * cfg.dim * FLOAT_SIZE;
-        // let wo = &data[start_wo..end_wo];
 
         let start_rms_ffn_weight = end_wo;
         let end_rms_ffn_weight = start_rms_ffn_weight + cfg.n_layers * cfg.dim * FLOAT_SIZE;
-        // let rms_ffn_weight = &data[start_rms_ffn_weight..end_rms_ffn_weight];
 
         let start_w1 = end_rms_ffn_weight;
         let end_w1 = start_w1 + cfg.n_layers * cfg.dim * cfg.hidden_dim * FLOAT_SIZE;
-        // let w1 = &data[start_w1..end_w1];
 
         let start_w2 = end_w1;
         let end_w2 = start_w2 + cfg.n_layers * cfg.hidden_dim * cfg.dim * FLOAT_SIZE;
-        // let w2 = &data[start_w2..end_w2];
 
         let start_w3 = end_w2;
         let end_w3 = start_w3 + cfg.n_layers * cfg.dim * cfg.hidden_dim * FLOAT_SIZE;
-        // let w3 = &data[start_w3..end_w3];
 
         let start_rms_final_weight = end_w3;
         let end_rms_final_weight = start_rms_final_weight + cfg.dim * FLOAT_SIZE;  // Skipping rms_final_weight for now
-        // let rms_final_weight = &data[start_rms_final_weight..end_rms_final_weight];
 
         let start_freq_cis_real = end_rms_final_weight;
         let end_freq_cis_real = start_freq_cis_real + cfg.seq_len * head_size * FLOAT_SIZE / 2; // Skip freq_cis_real
@@ -207,7 +196,7 @@ fn main() -> io::Result<()>  {
     let mmap = unsafe { MmapOptions::new().map(&file)? };
     let config_size = mem::size_of::<Config>();
     let config = Config::from_bytes(&mmap)?;
-    let transformer_weights = TransformerWeights::new(&mmap, &config, file_size);
+    let transformer_weights = TransformerWeights::load(&mmap, &config, file_size);
 
 
 
