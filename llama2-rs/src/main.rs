@@ -27,7 +27,7 @@ impl Config {
         }
         // Model files defined the bytes in terms of i32. Hence, before I convert them
         // to its respective usize equivalent, the bytes should be parsed first as i32 
-        let to_usize = |b: &[u8]| -> io::Result<usize> {
+        let raw_i32_to_usize = |b: &[u8]| -> io::Result<usize> {
             let num = b.try_into().map_err(
                 |_| io::Error::new(ErrorKind::InvalidData, "Invalid byte slice")
             ).map(i32::from_le_bytes)?;
@@ -35,31 +35,18 @@ impl Config {
         };
 
         Ok(Config {
-            dim: to_usize(&bytes[0..4])?,
-            hidden_dim: to_usize(&bytes[4..8])?,
-            n_layers: to_usize(&bytes[8..12])?,
-            n_heads: to_usize(&bytes[12..16])?,
-            n_kv_heads: to_usize(&bytes[16..20])?,
-            vocab_size: to_usize(&bytes[20..24])?,
-            seq_len: to_usize(&bytes[24..28])?,
+            dim: raw_i32_to_usize(&bytes[0..4])?,
+            hidden_dim: raw_i32_to_usize(&bytes[4..8])?,
+            n_layers: raw_i32_to_usize(&bytes[8..12])?,
+            n_heads: raw_i32_to_usize(&bytes[12..16])?,
+            n_kv_heads: raw_i32_to_usize(&bytes[16..20])?,
+            vocab_size: raw_i32_to_usize(&bytes[20..24])?,
+            seq_len: raw_i32_to_usize(&bytes[24..28])?,
         })
     }
 }
 
 
-/*
-
-Note on Lifetime Elison:
-The function signature now tells Rust that for some lifetime 'a, 
-the function takes two parameters, both of which are string slices 
-that live at least as long as lifetime 'a. The function signature also
-tells Rust that the string slice returned from the function will live at 
-least as long as lifetime 'a. In practice, it means that the lifetime of 
-the reference returned by the longest function is the same as the smaller 
-of the lifetimes of the values referred to by the function arguments. 
-These relationships are what we want Rust to use when analyzing this code.
-
-*/
 struct TransformerWeights <'a>{
     token_embedding_table   : &'a [f32], 
     rms_att_weight          : &'a [f32],
@@ -78,84 +65,76 @@ struct TransformerWeights <'a>{
 impl<'a> TransformerWeights <'a> {
     fn new(data: &'a Mmap, cfg: &Config) -> Self {
         unsafe {
-            // let dim = cfg.dim;
-            // let hidden_dim = cfg.hidden_dim;
-            // let n_layers = cfg.n_layers;
-            // let n_heads = cfg.n_heads;
-            // let n_kv_heads = cfg.n_kv_heads;
-            // let vocab_size = cfg.vocab_size;
-            // let seq_len = cfg.seq_len;
-
             let shared_weights = if cfg.vocab_size > 0 { true } else { false };
 
             let head_size = cfg.dim / cfg.n_heads;
 
             let start = CONFIG_SIZE_IN_BYTES;
-            let offset = start + cfg.vocab_size * cfg.dim * FLOAT_SIZE;
-            println!("(token_embedding_table) start = {}, offset = {}", start, offset);
-            let token_embedding_table = &data[start..offset];
+            let end = start + cfg.vocab_size * cfg.dim * FLOAT_SIZE;
+            println!("(token_embedding_table) start = {}, offset = {}", start, end);
+            let token_embedding_table = &data[start..end];
 
-            let start = offset;
-            let offset = start + cfg.n_layers * cfg.dim * FLOAT_SIZE;
-            println!("(rms_att_weight) start = {}, offset = {}", start, offset);            
-            let rms_att_weight = &data[start..offset];
+            let start = end;
+            let end = start + cfg.n_layers * cfg.dim * FLOAT_SIZE;
+            println!("(rms_att_weight) start = {}, offset = {}", start, end);            
+            let rms_att_weight = &data[start..end];
 
-            let start = offset;
-            let offset = start + cfg.n_layers * cfg.dim * cfg.n_heads * head_size * FLOAT_SIZE;
-            println!("(wq) start = {}, offset = {}", start, offset);            
-            let wq = &data[start..offset];
+            let start = end;
+            let end = start + cfg.n_layers * cfg.dim * cfg.n_heads * head_size * FLOAT_SIZE;
+            println!("(wq) start = {}, offset = {}", start, end);            
+            let wq = &data[start..end];
 
-            let start = offset;
-            let offset = start + cfg.n_layers * cfg.dim * cfg.n_kv_heads * head_size * FLOAT_SIZE;
-            println!("(wk) start = {}, offset = {}", start, offset);            
-            let wk = &data[start..offset];
+            let start = end;
+            let end = start + cfg.n_layers * cfg.dim * cfg.n_kv_heads * head_size * FLOAT_SIZE;
+            println!("(wk) start = {}, offset = {}", start, end);            
+            let wk = &data[start..end];
 
-            let start = offset;
-            let offset = start + cfg.n_layers * cfg.dim * cfg.n_kv_heads * head_size * FLOAT_SIZE;
-            println!("(wv) start = {}, offset = {}", start, offset);            
-            let wv = &data[start..offset];
+            let start = end;
+            let end = start + cfg.n_layers * cfg.dim * cfg.n_kv_heads * head_size * FLOAT_SIZE;
+            println!("(wv) start = {}, offset = {}", start, end);            
+            let wv = &data[start..end];
 
-            let start = offset;
-            let offset = start + cfg.n_layers * cfg.n_heads * head_size * cfg.dim * FLOAT_SIZE;
-            println!("(wo) start = {}, offset = {}", start, offset);            
-            let wo = &data[start..offset];
+            let start = end;
+            let end = start + cfg.n_layers * cfg.n_heads * head_size * cfg.dim * FLOAT_SIZE;
+            println!("(wo) start = {}, offset = {}", start, end);            
+            let wo = &data[start..end];
 
-            let start = offset;
-            let offset = start + cfg.n_layers * cfg.dim * FLOAT_SIZE;
-            println!("(rms_ffn_weight) start = {}, offset = {}", start, offset);            
-            let rms_ffn_weight = &data[start..offset];
+            let start = end;
+            let end = start + cfg.n_layers * cfg.dim * FLOAT_SIZE;
+            println!("(rms_ffn_weight) start = {}, offset = {}", start, end);            
+            let rms_ffn_weight = &data[start..end];
 
-            let start = offset;
-            let offset = start + cfg.n_layers * cfg.dim * cfg.hidden_dim * FLOAT_SIZE;
-            println!("(w1) start = {}, offset = {}", start, offset);            
-            let w1 = &data[start..offset];
+            let start = end;
+            let end = start + cfg.n_layers * cfg.dim * cfg.hidden_dim * FLOAT_SIZE;
+            println!("(w1) start = {}, offset = {}", start, end);            
+            let w1 = &data[start..end];
 
-            let start = offset;
-            let offset = start + cfg.n_layers * cfg.hidden_dim * cfg.dim * FLOAT_SIZE;
-            println!("(w2) start = {}, offset = {}", start, offset);            
-            let w2 = &data[start..offset];
+            let start = end;
+            let end = start + cfg.n_layers * cfg.hidden_dim * cfg.dim * FLOAT_SIZE;
+            println!("(w2) start = {}, offset = {}", start, end);            
+            let w2 = &data[start..end];
 
-            let start = offset;
-            let offset = start + cfg.n_layers * cfg.dim * cfg.hidden_dim * FLOAT_SIZE;
-            println!("(w3) start = {}, offset = {}", start, offset);            
-            let w3 = &data[start..offset];
+            let start = end;
+            let end = start + cfg.n_layers * cfg.dim * cfg.hidden_dim * FLOAT_SIZE;
+            println!("(w3) start = {}, offset = {}", start, end);            
+            let w3 = &data[start..end];
 
-            let start = offset;
-            let offset = start + cfg.dim * FLOAT_SIZE;  // Skipping rms_final_weight for now
-            println!("(rms_final_weight) start = {}, offset = {}", start, offset);            
-            let rms_final_weight = &data[start..offset];
+            let start = end;
+            let end = start + cfg.dim * FLOAT_SIZE;  // Skipping rms_final_weight for now
+            println!("(rms_final_weight) start = {}, offset = {}", start, end);            
+            let rms_final_weight = &data[start..end];
 
-            let start = offset;
-            let offset = start + cfg.seq_len * head_size * FLOAT_SIZE / 2; // Skip freq_cis_real
-            println!("(freq_cis_real_imag) start = {}, offset = {}", start, offset);            
-            let start = offset;
-            let offset = start + cfg.seq_len * head_size * FLOAT_SIZE / 2; // Skip freq_cis_imag
-            println!("(wcls) start = {}, offset = {}", start, offset);            
+            let start = end;
+            let end = start + cfg.seq_len * head_size * FLOAT_SIZE / 2; // Skip freq_cis_real
+            println!("(freq_cis_real_imag) start = {}, offset = {}", start, end);            
+            let start = end;
+            let end = start + cfg.seq_len * head_size * FLOAT_SIZE / 2; // Skip freq_cis_imag
+            println!("(wcls) start = {}, offset = {}", start, end);            
 
             let wcls = if shared_weights {
                 slice::from_raw_parts(token_embedding_table.as_ptr() as *const f32, token_embedding_table.len() / FLOAT_SIZE)
             } else {
-                let wcls_raw = &data[offset..];
+                let wcls_raw = &data[end..];
                 slice::from_raw_parts(wcls_raw.as_ptr() as *const f32, wcls_raw.len() / FLOAT_SIZE)
             };
 
