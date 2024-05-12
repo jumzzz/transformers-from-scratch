@@ -3,7 +3,7 @@ use std::slice;
 use std::fs::File;
 use std::io;
 
-use std::mem;
+use std::{mem,fs};
 use clap::{Parser,ValueEnum};
 use std::io::ErrorKind;
 
@@ -62,82 +62,89 @@ struct TransformerWeights <'a>{
     wcls                    : &'a [f32],
 }
 
+
 impl<'a> TransformerWeights <'a> {
-    fn new(data: &'a Mmap, cfg: &Config) -> Self {
+    fn new(data: &'a Mmap, cfg: &Config, max_index: usize) -> Self {
         unsafe {
-            let shared_weights = if cfg.vocab_size > 0 { true } else { false };
 
             let head_size = cfg.dim / cfg.n_heads;
 
             let start_tok_emb_tbl = CONFIG_SIZE_IN_BYTES;
             let end_tok_emb_tbl = start_tok_emb_tbl + cfg.vocab_size * cfg.dim * FLOAT_SIZE;
-            let token_embedding_table = &data[start_tok_emb_tbl..end_tok_emb_tbl];
+            // let token_embedding_table = &data[start_tok_emb_tbl..end_tok_emb_tbl];
 
             let start_rms_att_weight = end_tok_emb_tbl;
             let end_rms_att_weight = start_rms_att_weight + cfg.n_layers * cfg.dim * FLOAT_SIZE;
-            let rms_att_weight = &data[start_rms_att_weight..end_rms_att_weight];
+            // let rms_att_weight = &data[start_rms_att_weight..end_rms_att_weight];
 
             let start_wq = end_rms_att_weight;
             let end_wq = start_wq + cfg.n_layers * cfg.dim * cfg.n_heads * head_size * FLOAT_SIZE;
-            let wq = &data[start_wq..end_wq];
+            // let wq = &data[start_wq..end_wq];
 
             let start_wk = end_wq;
             let end_wk = start_wk + cfg.n_layers * cfg.dim * cfg.n_kv_heads * head_size * FLOAT_SIZE;
-            let wk = &data[start_wk..end_wk];
+            // let wk = &data[start_wk..end_wk];
 
             let start_wv = end_wk;
             let end_wv = start_wv + cfg.n_layers * cfg.dim * cfg.n_kv_heads * head_size * FLOAT_SIZE;
-            let wv = &data[start_wv..end_wv];
+            // let wv = &data[start_wv..end_wv];
 
             let start_wo = end_wv;
             let end_wo = start_wo + cfg.n_layers * cfg.n_heads * head_size * cfg.dim * FLOAT_SIZE;
-            let wo = &data[start_wo..end_wo];
+            // let wo = &data[start_wo..end_wo];
 
             let start_rms_ffn_weight = end_wo;
             let end_rms_ffn_weight = start_rms_ffn_weight + cfg.n_layers * cfg.dim * FLOAT_SIZE;
-            let rms_ffn_weight = &data[start_rms_ffn_weight..end_rms_ffn_weight];
+            // let rms_ffn_weight = &data[start_rms_ffn_weight..end_rms_ffn_weight];
 
             let start_w1 = end_rms_ffn_weight;
             let end_w1 = start_w1 + cfg.n_layers * cfg.dim * cfg.hidden_dim * FLOAT_SIZE;
-            let w1 = &data[start_w1..end_w1];
+            // let w1 = &data[start_w1..end_w1];
 
             let start_w2 = end_w1;
             let end_w2 = start_w2 + cfg.n_layers * cfg.hidden_dim * cfg.dim * FLOAT_SIZE;
-            let w2 = &data[start_w2..end_w2];
+            // let w2 = &data[start_w2..end_w2];
 
             let start_w3 = end_w2;
             let end_w3 = start_w3 + cfg.n_layers * cfg.dim * cfg.hidden_dim * FLOAT_SIZE;
-            let w3 = &data[start_w3..end_w3];
+            // let w3 = &data[start_w3..end_w3];
 
             let start_rms_final_weight = end_w3;
             let end_rms_final_weight = start_rms_final_weight + cfg.dim * FLOAT_SIZE;  // Skipping rms_final_weight for now
-            let rms_final_weight = &data[start_rms_final_weight..end_rms_final_weight];
+            // let rms_final_weight = &data[start_rms_final_weight..end_rms_final_weight];
 
             let start_freq_cis_real = end_rms_final_weight;
             let end_freq_cis_real = start_freq_cis_real + cfg.seq_len * head_size * FLOAT_SIZE / 2; // Skip freq_cis_real
             let start_freq_cis_img = end_freq_cis_real;
             let end_freq_cis_img = start_freq_cis_img + cfg.seq_len * head_size * FLOAT_SIZE / 2; // Skip freq_cis_imag
-            println!("(wcls) start = {}, offset = {}", start_freq_cis_img, end_freq_cis_img);            
+            let start_wcls = end_freq_cis_img;
+            let end_wcls = max_index;
 
+            let map_bytes_to_f32 = |start_index: usize, end_index: usize| -> &'a [f32] {
+                unsafe {
+                    slice::from_raw_parts(data[start_index..end_index].as_ptr() as *const f32, (end_index - start_index) / FLOAT_SIZE)
+                }
+            };
+            
+            let shared_weights = if cfg.vocab_size > 0 { true } else { false };
             let wcls = if shared_weights {
-                slice::from_raw_parts(token_embedding_table.as_ptr() as *const f32, token_embedding_table.len() / FLOAT_SIZE)
+                map_bytes_to_f32(start_tok_emb_tbl, end_tok_emb_tbl)
             } else {
-                let wcls_raw = &data[end_freq_cis_img..];
-                slice::from_raw_parts(wcls_raw.as_ptr() as *const f32, wcls_raw.len() / FLOAT_SIZE)
+                map_bytes_to_f32(start_wcls, end_wcls)
             };
 
             TransformerWeights {
-                token_embedding_table: slice::from_raw_parts(token_embedding_table.as_ptr() as *const f32, token_embedding_table.len() / FLOAT_SIZE),
-                rms_att_weight: slice::from_raw_parts(rms_att_weight.as_ptr() as *const f32, rms_att_weight.len() / FLOAT_SIZE),
-                rms_ffn_weight : slice::from_raw_parts(rms_ffn_weight.as_ptr() as *const f32, rms_ffn_weight.len() / FLOAT_SIZE),
-                wq: slice::from_raw_parts(wq.as_ptr() as *const f32, wq.len() / FLOAT_SIZE),
-                wk: slice::from_raw_parts(wk.as_ptr() as *const f32, wk.len() / FLOAT_SIZE),
-                wv: slice::from_raw_parts(wv.as_ptr() as *const f32, wv.len() / FLOAT_SIZE),
-                wo: slice::from_raw_parts(wo.as_ptr() as *const f32, wv.len() / FLOAT_SIZE),
-                w1: slice::from_raw_parts(w1.as_ptr() as *const f32, w1.len() / FLOAT_SIZE),
-                w2: slice::from_raw_parts(w2.as_ptr() as *const f32, w2.len() / FLOAT_SIZE),
-                w3: slice::from_raw_parts(w3.as_ptr() as *const f32, w3.len() / FLOAT_SIZE),
-                rms_final_weight: slice::from_raw_parts(rms_final_weight.as_ptr() as *const f32, rms_final_weight.len() / FLOAT_SIZE), 
+                token_embedding_table: map_bytes_to_f32(start_tok_emb_tbl, end_tok_emb_tbl), 
+                rms_att_weight: map_bytes_to_f32(start_rms_att_weight, end_rms_att_weight), 
+                rms_ffn_weight: map_bytes_to_f32(start_rms_ffn_weight, end_rms_ffn_weight), 
+                wq: map_bytes_to_f32(start_wq, end_wq), 
+                wk: map_bytes_to_f32(start_wk, end_wk), 
+                wv: map_bytes_to_f32(start_wv, end_wv), 
+                wo: map_bytes_to_f32(start_wo, end_wo), 
+                w1: map_bytes_to_f32(start_w1, end_w1), 
+                w2: map_bytes_to_f32(start_w2, end_w2), 
+                w3: map_bytes_to_f32(start_w3, end_w3), 
+                rms_final_weight: map_bytes_to_f32(start_rms_final_weight, end_rms_final_weight), 
                 wcls: wcls,       
             } 
         }
@@ -179,6 +186,11 @@ struct Cli {
     system_prompt: String,
 }
 
+fn get_file_size(file_path: &str) -> std::io::Result<usize> {
+    let metadata = fs::metadata(file_path)?;
+    Ok(metadata.len() as usize)
+}
+
 fn main() -> io::Result<()>  {
     let cli = Cli::parse();
 
@@ -191,12 +203,13 @@ fn main() -> io::Result<()>  {
     println!("RNG Seed: {}", cli.rng_seed);
     println!("Mode: {:?}", cli.mode);
     println!("System Prompt: '{}'", cli.system_prompt);
-    
+
+    let file_size = get_file_size(&cli.checkpoint_path)?; 
     let file = File::open(cli.checkpoint_path)?;
     let mmap = unsafe { MmapOptions::new().map(&file)? };
     let config_size = mem::size_of::<Config>();
     let config = Config::from_bytes(&mmap)?;
-    let transformer_weights = TransformerWeights::new(&mmap, &config);
+    let transformer_weights = TransformerWeights::new(&mmap, &config, file_size);
 
 
 
