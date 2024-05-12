@@ -202,6 +202,7 @@ llama2-rs/run.c
 
 # Ignore everything in the chatgpt-prompts directory in llama2-rs
 llama2-rs/chatgpt-prompts/
+llama2-rs/scratch/*
 
 # Ignore everything in models/
 models/*
