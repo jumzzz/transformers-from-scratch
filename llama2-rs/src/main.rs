@@ -88,68 +88,68 @@ impl<'a> TransformerWeights <'a> {
 
             let shared_weights = if cfg.vocab_size > 0 { true } else { false };
 
-            let head_size = dim / n_heads;
+            let head_size = cfg.dim / cfg.n_heads;
 
             let start = CONFIG_SIZE_IN_BYTES;
-            let offset = start + vocab_size * dim * FLOAT_SIZE;
+            let offset = start + cfg.vocab_size * cfg.dim * FLOAT_SIZE;
             println!("(token_embedding_table) start = {}, offset = {}", start, offset);
             let token_embedding_table = &data[start..offset];
 
             let start = offset;
-            let offset = start + n_layers * dim * FLOAT_SIZE;
+            let offset = start + cfg.n_layers * cfg.dim * FLOAT_SIZE;
             println!("(rms_att_weight) start = {}, offset = {}", start, offset);            
             let rms_att_weight = &data[start..offset];
 
             let start = offset;
-            let offset = start + n_layers * dim * n_heads * head_size * FLOAT_SIZE;
+            let offset = start + cfg.n_layers * cfg.dim * cfg.n_heads * head_size * FLOAT_SIZE;
             println!("(wq) start = {}, offset = {}", start, offset);            
             let wq = &data[start..offset];
 
             let start = offset;
-            let offset = start + n_layers * dim * n_kv_heads * head_size * FLOAT_SIZE;
+            let offset = start + cfg.n_layers * cfg.dim * cfg.n_kv_heads * head_size * FLOAT_SIZE;
             println!("(wk) start = {}, offset = {}", start, offset);            
             let wk = &data[start..offset];
 
             let start = offset;
-            let offset = start + n_layers * dim * n_kv_heads * head_size * FLOAT_SIZE;
+            let offset = start + cfg.n_layers * cfg.dim * cfg.n_kv_heads * head_size * FLOAT_SIZE;
             println!("(wv) start = {}, offset = {}", start, offset);            
             let wv = &data[start..offset];
 
             let start = offset;
-            let offset = start + n_layers * n_heads * head_size * dim * FLOAT_SIZE;
+            let offset = start + cfg.n_layers * cfg.n_heads * head_size * cfg.dim * FLOAT_SIZE;
             println!("(wo) start = {}, offset = {}", start, offset);            
             let wo = &data[start..offset];
 
             let start = offset;
-            let offset = start + n_layers * dim * FLOAT_SIZE;
+            let offset = start + cfg.n_layers * cfg.dim * FLOAT_SIZE;
             println!("(rms_ffn_weight) start = {}, offset = {}", start, offset);            
             let rms_ffn_weight = &data[start..offset];
 
             let start = offset;
-            let offset = start + n_layers * dim * hidden_dim * FLOAT_SIZE;
+            let offset = start + cfg.n_layers * cfg.dim * cfg.hidden_dim * FLOAT_SIZE;
             println!("(w1) start = {}, offset = {}", start, offset);            
             let w1 = &data[start..offset];
 
             let start = offset;
-            let offset = start + n_layers * hidden_dim * dim * FLOAT_SIZE;
+            let offset = start + cfg.n_layers * cfg.hidden_dim * cfg.dim * FLOAT_SIZE;
             println!("(w2) start = {}, offset = {}", start, offset);            
             let w2 = &data[start..offset];
 
             let start = offset;
-            let offset = start + n_layers * dim * hidden_dim * FLOAT_SIZE;
+            let offset = start + cfg.n_layers * cfg.dim * cfg.hidden_dim * FLOAT_SIZE;
             println!("(w3) start = {}, offset = {}", start, offset);            
             let w3 = &data[start..offset];
 
             let start = offset;
-            let offset = start + dim * FLOAT_SIZE;  // Skipping rms_final_weight for now
+            let offset = start + cfg.dim * FLOAT_SIZE;  // Skipping rms_final_weight for now
             println!("(rms_final_weight) start = {}, offset = {}", start, offset);            
             let rms_final_weight = &data[start..offset];
 
             let start = offset;
-            let offset = start + seq_len * head_size * FLOAT_SIZE / 2; // Skip freq_cis_real
+            let offset = start + cfg.seq_len * head_size * FLOAT_SIZE / 2; // Skip freq_cis_real
             println!("(freq_cis_real_imag) start = {}, offset = {}", start, offset);            
             let start = offset;
-            let offset = start + seq_len * head_size * FLOAT_SIZE / 2; // Skip freq_cis_imag
+            let offset = start + cfg.seq_len * head_size * FLOAT_SIZE / 2; // Skip freq_cis_imag
             println!("(wcls) start = {}, offset = {}", start, offset);            
 
             let wcls = if shared_weights {
