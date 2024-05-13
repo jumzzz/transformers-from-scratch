@@ -137,18 +137,18 @@ impl TransformerIndexRange {
 }
 
 struct TransformerWeights <'a>{
-    token_embedding_table   : &'a [f32], 
-    rms_att_weight          : &'a [f32],
-    rms_ffn_weight          : &'a [f32],
-    wq                      : &'a [f32],
-    wk                      : &'a [f32],
-    wv                      : &'a [f32],
-    wo                      : &'a [f32],
-    w1                      : &'a [f32],
-    w2                      : &'a [f32],
-    w3                      : &'a [f32],
-    rms_final_weight        : &'a [f32],
-    wcls                    : &'a [f32],
+    token_embedding_table:  &'a [f32], 
+    rms_att_weight:         &'a [f32],
+    rms_ffn_weight:         &'a [f32],
+    wq:                     &'a [f32],
+    wk:                     &'a [f32],
+    wv:                     &'a [f32],
+    wo:                     &'a [f32],
+    w1:                     &'a [f32],
+    w2:                     &'a [f32],
+    w3:                     &'a [f32],
+    rms_final_weight:       &'a [f32],
+    wcls:                   &'a [f32],
 }
 
 impl<'a> TransformerWeights <'a> {
@@ -241,7 +241,6 @@ fn main() -> io::Result<()>  {
     let file_size = get_file_size(&cli.checkpoint_path)?; 
     let file = File::open(cli.checkpoint_path)?;
     let mmap = unsafe { MmapOptions::new().map(&file)? };
-    let config_size = mem::size_of::<Config>();
     let config = Config::from_bytes(&mmap)?;
     let transformer_weights = TransformerWeights::load(&mmap, &config, file_size);
 
