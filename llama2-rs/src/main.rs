@@ -242,7 +242,8 @@ fn main() -> io::Result<()>  {
     let file = File::open(cli.checkpoint_path)?;
     let mmap = unsafe { MmapOptions::new().map(&file)? };
     let config = Config::from_bytes(&mmap)?;
-    let transformer_weights = TransformerWeights::load(&mmap, &config, file_size);
+    let _transformer_weights = TransformerWeights::load(&mmap, &config, file_size);
+
 
     Ok(())
 }
