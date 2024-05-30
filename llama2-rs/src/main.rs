@@ -204,12 +204,14 @@ struct Tokenizer {
     sorted_vocab: TokenIndex,
     vocab_size: usize,
     max_token_length: usize,
-    byte_pieces: Vec<u8>,
+    byte_pieces: [f32],
 }
 
 impl Tokenizer {
-    fn load() -> Self {
+    fn load(tokenizer_file: &File, vocab_size: usize) -> Self {
         todo!();
+        let vocab_size = vocab_size;
+
     }
 }
 
@@ -260,11 +262,16 @@ fn main() -> io::Result<()>  {
     println!("Mode: {:?}", cli.mode);
     println!("System Prompt: '{}'", cli.system_prompt);
 
-    let file_size = get_file_size(&cli.checkpoint_path)?; 
-    let file = File::open(cli.checkpoint_path)?;
-    let mmap = unsafe { MmapOptions::new().map(&file)? };
-    let config = Config::from_bytes(&mmap)?;
-    let _transformer_weights = TransformerWeights::load(&mmap, &config, file_size);
+    let cp_file_size = get_file_size(&cli.checkpoint_path)?; 
+    let cp_file = File::open(cli.checkpoint_path)?;
+    let cp_mmap = unsafe { MmapOptions::new().map(&cp_file)? };
+    let config = Config::from_bytes(&cp_mmap)?;
+
+    let tok_file_size = get_file_size(&cli.tokenizer_path)?;
+    let tok_file = File::open(&cli.tokenizer_path)?;
+
+    let _transformer_weights = TransformerWeights::load(&cp_mmap, &config, cp_file_size);
+    let _tokenizer = Tokenizer::load(&tok_file);
 
     Ok(())
 }
