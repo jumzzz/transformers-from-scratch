@@ -1,0 +1,14 @@
+{
+  "target_lang": "rust",
+  "config": {
+    "name": "Launch file",
+    "type": "codelldb",
+    "request": "launch",
+    "cwd": "/Users/jums/projects/llm/transformers-from-scratch/llama2-rs",
+    "program": "/Users/jums/projects/llm/transformers-from-scratch/llama2-rs/target/debug/llama2-rs",
+    "args": ["--checkpoint-path", "../models/stories15M.bin"],
+    "sourceLanguages": [
+      "rust"
+    ]
+  }
+}

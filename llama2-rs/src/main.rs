@@ -186,9 +186,31 @@ impl<'a> TransformerWeights <'a> {
     }
 }
 
+
 struct Transformer {
     config  : Config,
     fd      : i32,          // File Descriptor for memory mapping?
+}
+
+
+struct TokenIndex {
+    str: String,
+    id: u32,
+}
+
+struct Tokenizer {
+    vocab: Vec<String>,
+    vocab_scores: Vec<f32>,
+    sorted_vocab: TokenIndex,
+    vocab_size: usize,
+    max_token_length: usize,
+    byte_pieces: Vec<u8>,
+}
+
+impl Tokenizer {
+    fn load() -> Self {
+        todo!();
+    }
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
@@ -243,7 +265,6 @@ fn main() -> io::Result<()>  {
     let mmap = unsafe { MmapOptions::new().map(&file)? };
     let config = Config::from_bytes(&mmap)?;
     let _transformer_weights = TransformerWeights::load(&mmap, &config, file_size);
-
 
     Ok(())
 }
