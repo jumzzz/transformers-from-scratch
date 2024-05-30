@@ -206,3 +206,6 @@ llama2-rs/scratch/*
 
 # Ignore everything in models/
 models/*
+
+# Ignore .dSYM files
+*.dSYM
