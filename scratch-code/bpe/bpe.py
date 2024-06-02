@@ -7,8 +7,16 @@ tokenizer = AutoTokenizer.from_pretrained("gpt2")
 def print_json(data):
     print(json.dumps(data, indent=2))
 
-def print_line_by_line(data):
-    for key,val in data.items():
+def print_line_by_line(data, limit=-1):
+    if limit == -1:
+        assigned_limit = len(data)
+    else:
+        assigned_limit = limit 
+
+    for i, data in enumerate(data.items(), start=0):
+        key, val = data
+        if i >= assigned_limit:
+            break
         print(f"{key} = {val}")
     print("")
 
@@ -59,3 +67,14 @@ pair_freqs = compute_pair_freqs(splits)
 
 print("pair_freqs:")
 print_line_by_line(pair_freqs)
+
+
+best_pair = ""
+max_freq = None
+
+for pair, freq in pair_freqs.items():
+    if max_freq is None or max_freq < freq:
+        best_pair = pair
+        max_freq = freq
+
+print(best_pair, max_freq)
