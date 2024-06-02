@@ -40,4 +40,7 @@ for word in word_freqs.keys():
 alphabet.sort()
 vocab = ["<|endoftext|>"] + alphabet.copy()
 
-print_json(vocab)
+print("")
+splits = {word: [c for c in word] for word in word_freqs.keys()}
+print_json(splits)
+
