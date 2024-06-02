@@ -38,5 +38,6 @@ for word in word_freqs.keys():
         if letter not in alphabet:
             alphabet.append(letter)
 alphabet.sort()
+vocab = ["<|endoftext|>"] + alphabet.copy()
 
-print_json(alphabet)
+print_json(vocab)
