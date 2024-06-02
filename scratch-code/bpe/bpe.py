@@ -50,17 +50,17 @@ splits = {word: [c for c in word] for word in word_freqs.keys()}
 
 def compute_pair_freqs(splits):
     pair_freqs = defaultdict(int)
-    print("computing pairs:")
+    # print("computing pairs:")
     for word, freq in word_freqs.items():
         split = splits[word]
-        print(f"word = {word}, splits[{word}] = {split}")
+        # print(f"word = {word}, splits[{word}] = {split}")
         if len(split) == 1:
             continue
         for i in range(len(split) - 1):
             pair = (split[i], split[i + 1])
             pair_freqs[pair] += freq
     
-    print("")
+    # print("")
     return pair_freqs
 
 pair_freqs = compute_pair_freqs(splits)
@@ -97,3 +97,49 @@ def merge_pair(a, b, splits):
                 i += 1
         splits[word] = split
     return splits
+
+splits = merge_pair("Ġ", "t", splits)
+
+print("")
+print("initial splits: ")
+print_line_by_line(splits, -1)
+
+vocab_size = 50
+
+while len(vocab) < vocab_size:
+    pair_freqs = compute_pair_freqs(splits)
+    best_pair = ""
+    max_freq = None
+    for pair, freq in pair_freqs.items():
+        if max_freq is None or max_freq < freq:
+            best_pair = pair
+            max_freq = freq
+    splits = merge_pair(best_pair[0], best_pair[1], splits)
+    merges[best_pair] = best_pair[0] + best_pair[1]
+    vocab.append(best_pair[0] + best_pair[1])
+
+print("merges:")
+print_line_by_line(merges, -1)
+
+print("final splits:")
+print_line_by_line(splits)
+
+
+def tokenize(text):
+    pre_tokenize_result = tokenizer._tokenizer.pre_tokenizer.pre_tokenize_str(text)
+    pre_tokenized_text = [word for word, offset in pre_tokenize_result]
+    splits = [[l for l in word] for word in pre_tokenized_text]
+    for pair, merge in merges.items():
+        for idx, split in enumerate(splits):
+            i = 0
+            while i < len(split) - 1:
+                if split[i] == pair[0] and split[i + 1] == pair[1]:
+                    split = split[:i] + [merge] + split[i + 2 :]
+                else:
+                    i += 1
+            splits[idx] = split
+
+    return sum(splits, [])
+
+print("Sample tokenization: this is not a tokenization.")
+print(tokenize("this is not a tokenization"))
