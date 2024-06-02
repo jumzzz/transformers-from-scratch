@@ -129,15 +129,33 @@ def tokenize(text):
     pre_tokenize_result = tokenizer._tokenizer.pre_tokenizer.pre_tokenize_str(text)
     pre_tokenized_text = [word for word, offset in pre_tokenize_result]
     splits = [[l for l in word] for word in pre_tokenized_text]
+
+    print("[1] pre_tokenize_result = ", pre_tokenize_result)
+    print("[2] pre_tokenized_text = ", pre_tokenized_text)
+    print("[3] splits:")
+    for split in splits:
+        print(f"[3-a] split: {split}")
+    print("")
+
     for pair, merge in merges.items():
+        print(f"[4] -> pair = {pair}, merge = {merge}")
         for idx, split in enumerate(splits):
             i = 0
             while i < len(split) - 1:
+#                print(f"4-a -> split = {split}")
+#                print(f"4-b -> split[{i}] = {split[i]}")
+#                print(f"4-c -> split[{i + 1}] = {split[i + 1]}")
+#                
+#                print(f"4-d -> pair[0] = {pair[0]}")
+#                print(f"4-e -> pair[1] = {pair[1]}")
+#                 
+#                print("")
                 if split[i] == pair[0] and split[i + 1] == pair[1]:
                     split = split[:i] + [merge] + split[i + 2 :]
                 else:
                     i += 1
             splits[idx] = split
+            print(f"4-f -> splits[{idx}] = {splits[idx]}")
 
     return sum(splits, [])
 
