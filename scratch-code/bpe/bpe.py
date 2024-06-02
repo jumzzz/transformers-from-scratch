@@ -66,7 +66,7 @@ def compute_pair_freqs(splits):
 pair_freqs = compute_pair_freqs(splits)
 
 print("pair_freqs:")
-print_line_by_line(pair_freqs)
+print_line_by_line(pair_freqs, 5)
 
 
 best_pair = ""
@@ -77,4 +77,23 @@ for pair, freq in pair_freqs.items():
         best_pair = pair
         max_freq = freq
 
-print(best_pair, max_freq)
+print("most frequent pair:")
+print(f"{best_pair} = {max_freq}")
+
+merges = {("Ġ", "t"): "Ġt"}
+vocab.append("Ġt")
+
+def merge_pair(a, b, splits):
+    for word in word_freqs:
+        split = splits[word]
+        if len(split) == 1:
+            continue
+
+        i = 0
+        while i < len(split) - 1:
+            if split[i] == a and split[i + 1] == b:
+                split = split[:i] + [a + b] + split[i + 2 :]
+            else:
+                i += 1
+        splits[word] = split
+    return splits
