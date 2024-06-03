@@ -232,7 +232,7 @@ struct Tokenizer {
 
 
 impl Tokenizer {
-    fn load(tokenizer_path: &str, vocab_size: usize) -> io::Result<Tokenizer> {
+    fn load(tokenizer_path: &str, vocab_size: usize) -> io::Result<Self> {
         let mut byte_pieces = vec!['\0'; 512];
 
         for i in 0..256 { 
@@ -266,6 +266,57 @@ impl Tokenizer {
                 vocab_size,
                 max_token_length,
                 byte_pieces,
+            }
+        )
+    }
+}
+
+// typedef struct {
+//     int vocab_size;
+//     ProbIndex* probindex; // buffer used in top-p sampling
+//     float temperature;
+//     float topp;
+//     unsigned long long rng_state;
+// }:
+
+struct ProbIndex {
+    prob: f32,
+    index: usize,
+}
+
+struct Sampler {
+    vocab_size: usize,
+    probindex: Vec<ProbIndex>,
+    temperature: f32,
+    topp: f32,
+    rng_state: u64, 
+}
+
+
+// void build_sampler(Sampler* sampler, int vocab_size, float temperature, float topp, unsigned long long rng_seed) {
+//     sampler->vocab_size = vocab_size;
+//     sampler->temperature = temperature;
+//     sampler->topp = topp;
+//     sampler->rng_state = rng_seed;
+//     // buffer only used with nucleus sampling; may not need but it's ~small
+//     sampler->probindex = malloc(sampler->vocab_size * sizeof(ProbIndex));
+// }
+
+impl Sampler {
+    fn build(vocab_size: usize, temperature: f32, topp: f32) -> io::Result<Self> {
+        let vocab_size = vocab_size;
+        let temperature = temperature;
+        let topp = topp;
+
+        // TODO: interior mutability later. For now, let's make the whole Sampler as mutable. 
+        let probindex = Vec::<ProbIndex>::with_capacity(vocab_size);
+
+        Ok(
+            Sampler {
+                vocab_size,
+                probindex,
+                temperature,
+                topp,
             }
         )
     }
@@ -328,6 +379,7 @@ fn main() -> io::Result<()>  {
 
     let transformer_weights = TransformerWeights::load(&cp_mmap, &config, cp_file_size);
     let _tokenizer = Tokenizer::load(&cli.tokenizer_path, config.vocab_size)?;
+    let _sampler = Sampler::build(config.vocab_size, cli.temperature, cli.topp)?;
 
 
     Ok(())
