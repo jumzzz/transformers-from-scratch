@@ -7,6 +7,8 @@ use std::{mem,fs};
 use clap::{Parser,ValueEnum};
 use std::io::{ErrorKind, Read};
 
+use std::string::FromUtf8Error;
+
 const FLOAT_SIZE: usize = 4;
 const CONFIG_SIZE_IN_BYTES: usize = 28;
 
@@ -198,38 +200,74 @@ struct TokenIndex {
     id: u32,
 }
 
-struct Tokenizer {
-    vocab: Vec<String>,
-    vocab_scores: Vec<f32>,
-    sorted_vocab: TokenIndex,
-    vocab_size: usize,
-    max_token_length: usize,
-    byte_pieces: Vec<char>,
+fn read_bytes_to_float(file_io: &mut File) -> io::Result<f32> {
+    let mut buffer = [0u8; mem::size_of::<f32>()];
+    file_io.read_exact(&mut buffer)?;
+    let f32_from_bytes = f32::from_le_bytes(buffer);
+
+    Ok(f32_from_bytes)
 }
 
+fn read_bytes_to_str(file_io: &mut File, str_len: usize) -> io::Result<String> {
+    let mut buffer = vec![0u8; str_len];
+    file_io.read_exact(&mut buffer)?;
+    Ok(String::from_utf8(buffer).unwrap())
+}
 
-fn read_int_bytes_to_int(file_io: &mut File)  -> io::Result<usize> {
-    let mut buffer = [0u8; 4];
+fn read_int_bytes_to_usize(file_io: &mut File)  -> io::Result<usize> {
+    let mut buffer = [0u8; mem::size_of::<i32>()];
     file_io.read_exact(&mut buffer)?;
     let i32_from_bytes = i32::from_le_bytes(buffer);
     
     Ok(i32_from_bytes as usize)
 }
 
+struct Tokenizer {
+    vocabs: Vec<String>,
+    vocab_scores: Vec<f32>,
+    vocab_size: usize,
+    max_token_length: usize,
+    byte_pieces: Vec<char>,
+}
+
+
 impl Tokenizer {
-    fn load(tokenizer_path: &str, vocab_size: usize) -> io::Result<()> {
-        let vocab_size = vocab_size;
+    fn load(tokenizer_path: &str, vocab_size: usize) -> io::Result<Tokenizer> {
         let mut byte_pieces = vec!['\0'; 512];
 
         for i in 0..=255 { 
             byte_pieces[i * 2] = (i as u8) as char; 
         }
 
+        let vocab_size = vocab_size;
+        
         let mut tok_file = File::open(tokenizer_path)?;
-        let max_token_length = read_int_bytes_to_int(&mut tok_file)?;
-        println!("max_token_length = {}", max_token_length);
+        let mut vocab_scores = Vec::with_capacity(vocab_size);
+        let mut vocabs = Vec::with_capacity(vocab_size);
 
-        Ok(())
+        let max_token_length = read_int_bytes_to_usize(&mut tok_file)?;
+        println!("max_token_length = {}", max_token_length);
+        
+        for i in 0..vocab_size {
+            let vocab_score = read_bytes_to_float(&mut tok_file)?;
+            let vocab_len = read_int_bytes_to_usize(&mut tok_file)?;
+            let vocab = read_bytes_to_str(&mut tok_file, vocab_len)?;
+            
+            println!("[{}/{}] vocab = {}, vocab_len = {}, vocab_score = {}", &i , &vocab_size ,&vocab, &vocab_len, &vocab_score);
+
+            vocab_scores.push(vocab_score);
+            vocabs.push(vocab);
+        }
+
+        Ok( 
+            Tokenizer {
+                vocabs,
+                vocab_scores,
+                vocab_size,
+                max_token_length,
+                byte_pieces,
+            }
+        )
     }
 }
 
@@ -289,7 +327,7 @@ fn main() -> io::Result<()>  {
     let tok_file = File::open(&cli.tokenizer_path)?;
 
     let transformer_weights = TransformerWeights::load(&cp_mmap, &config, cp_file_size);
-    let _tokenizer = Tokenizer::load(&cli.tokenizer_path, config.vocab_size);
+    let _tokenizer = Tokenizer::load(&cli.tokenizer_path, config.vocab_size)?;
 
 
     Ok(())
