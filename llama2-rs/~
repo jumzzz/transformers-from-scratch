@@ -5,7 +5,7 @@ use std::io;
 
 use std::{mem,fs};
 use clap::{Parser,ValueEnum};
-use std::io::{ErrorKind, Read};
+use std::io::ErrorKind;
 
 const FLOAT_SIZE: usize = 4;
 const CONFIG_SIZE_IN_BYTES: usize = 28;
@@ -207,29 +207,17 @@ struct Tokenizer {
     byte_pieces: Vec<char>,
 }
 
-
-fn read_int_bytes_to_int(file_io: &mut File)  -> io::Result<usize> {
-    let mut buffer = [0u8; 4];
-    file_io.read_exact(&mut buffer)?;
-    let i32_from_bytes = i32::from_le_bytes(buffer);
-    
-    Ok(i32_from_bytes as usize)
-}
-
 impl Tokenizer {
-    fn load(tokenizer_path: &str, vocab_size: usize) -> io::Result<()> {
+    fn load(tokenizer_path: &str, vocab_size: usize) -> Self {
         let vocab_size = vocab_size;
-        let mut byte_pieces = vec!['\0'; 512];
+        let mut byte_pieces = vec!['\0', 512];
 
-        for i in 0..=255 { 
-            byte_pieces[i * 2] = (i as u8) as char; 
+        for i in 0u8..255u8: {
+            byte_pieces[i * 2] = i as char;
         }
 
-        let mut tok_file = File::open(tokenizer_path)?;
-        let max_token_length = read_int_bytes_to_int(&mut tok_file)?;
-        println!("max_token_length = {}", max_token_length);
 
-        Ok(())
+
     }
 }
 
@@ -289,7 +277,7 @@ fn main() -> io::Result<()>  {
     let tok_file = File::open(&cli.tokenizer_path)?;
 
     let transformer_weights = TransformerWeights::load(&cp_mmap, &config, cp_file_size);
-    let _tokenizer = Tokenizer::load(&cli.tokenizer_path, config.vocab_size);
+    let _tokenizer = Tokenizer::load(&cli.tokenizer_path, _transformer_weights.vocab_size);
 
 
     Ok(())
