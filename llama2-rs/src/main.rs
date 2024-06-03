@@ -303,20 +303,16 @@ struct Sampler {
 // }
 
 impl Sampler {
-    fn build(vocab_size: usize, temperature: f32, topp: f32) -> io::Result<Self> {
-        let vocab_size = vocab_size;
-        let temperature = temperature;
-        let topp = topp;
-
+    fn build(vocab_size: usize, temperature: f32, topp: f32, rng_state: u64) -> io::Result<Self> {
         // TODO: interior mutability later. For now, let's make the whole Sampler as mutable. 
         let probindex = Vec::<ProbIndex>::with_capacity(vocab_size);
-
         Ok(
             Sampler {
                 vocab_size,
                 probindex,
                 temperature,
                 topp,
+                rng_state,
             }
         )
     }
