@@ -235,7 +235,7 @@ impl Tokenizer {
     fn load(tokenizer_path: &str, vocab_size: usize) -> io::Result<Tokenizer> {
         let mut byte_pieces = vec!['\0'; 512];
 
-        for i in 0..=255 { 
+        for i in 0..256 { 
             byte_pieces[i * 2] = (i as u8) as char; 
         }
 
