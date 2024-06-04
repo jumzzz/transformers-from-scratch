@@ -189,9 +189,53 @@ impl<'a> TransformerWeights <'a> {
 }
 
 
-struct Transformer {
-    config  : Config,
-    fd      : i32,          // File Descriptor for memory mapping?
+//typedef struct {
+//    // current wave of activations
+//    float *x; // activation at current time stamp (dim,)
+//    float *xb; // same, but inside a residual branch (dim,)
+//    float *xb2; // an additional buffer just for convenience (dim,)
+//    float *hb; // buffer for hidden dimension in the ffn (hidden_dim,)
+//    float *hb2; // buffer for hidden dimension in the ffn (hidden_dim,)
+//    float *q; // query (dim,)
+//    float *k; // key (dim,)
+//    float *v; // value (dim,)
+//    float *att; // buffer for scores/attention values (n_heads, seq_len)
+//    float *logits; // output logits
+//    // kv cache
+//    float* key_cache;   // (layer, seq_len, dim)
+//    float* value_cache; // (layer, seq_len, dim)
+//} RunState;
+//
+//typedef struct {
+//    Config config; // the hyperparameters of the architecture (the blueprint)
+//    TransformerWeights weights; // the weights of the model
+//    RunState state; // buffers for the "wave" of activations in the forward pass
+//    // some more state needed to properly clean up the memory mapping (sigh)
+//    int fd; // file descriptor for memory mapping
+//    float* data; // memory mapped data pointer
+//    ssize_t file_size; // size of the checkpoint file in bytes
+//} Transformer;
+
+
+struct Transformer<'a> {
+    config: Config,
+    transformer_weights: TransformerWeights<'a>,
+    
+}
+
+impl<'a> Transformer<'a> {
+    fn load(cp_mmap: &'a Mmap, cp_file_size: usize) -> io::Result<Self> {
+        
+        let config = Config::from_bytes(&cp_mmap)?;
+        let transformer_weights = TransformerWeights::load(&cp_mmap, &config, cp_file_size);
+
+        Ok(
+            Transformer {
+                config,
+                transformer_weights,
+            }
+        )
+    } 
 }
 
 
@@ -324,6 +368,13 @@ enum Mode {
     Chat,
 }
 
+// void generate(Transformer *transformer, Tokenizer *tokenizer, Sampler *sampler, char *prompt, int steps) 
+fn generate() {
+    
+}
+
+
+
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
 struct Cli {
@@ -352,6 +403,7 @@ fn get_file_size(file_path: &str) -> std::io::Result<usize> {
     Ok(metadata.len() as usize)
 }
 
+
 fn main() -> io::Result<()>  {
     let cli = Cli::parse();
 
@@ -368,15 +420,25 @@ fn main() -> io::Result<()>  {
     let cp_file_size = get_file_size(&cli.checkpoint_path)?; 
     let cp_file = File::open(cli.checkpoint_path)?;
     let cp_mmap = unsafe { MmapOptions::new().map(&cp_file)? };
-    let config = Config::from_bytes(&cp_mmap)?;
+//    let transformer = Transformer::load(&cp_mmap, cp_file_size)?; 
+//    let vocab_size = transformer.config.vocab_size;
+    
+//    let config = Config::from_bytes(&cp_mmap)?;
+//    let transformer_weights = TransformerWeights::load(&cp_mmap, &config, cp_file_size);
 
-    let tok_file_size = get_file_size(&cli.tokenizer_path)?;
-    let tok_file = File::open(&cli.tokenizer_path)?;
+    let transformer = Transformer::load(&cp_mmap, cp_file_size)?;
+    let vocab_size = transformer.config.vocab_size;
+    
+    let _tok_file_size = get_file_size(&cli.tokenizer_path)?;
+    let _tok_file = File::open(&cli.tokenizer_path)?;
 
-    let transformer_weights = TransformerWeights::load(&cp_mmap, &config, cp_file_size);
-    let _tokenizer = Tokenizer::load(&cli.tokenizer_path, config.vocab_size)?;
-    let _sampler = Sampler::build(config.vocab_size, cli.temperature, cli.topp)?;
-
+    let _tokenizer = Tokenizer::load(&cli.tokenizer_path, vocab_size)?;
+    let _sampler = Sampler::build(vocab_size, cli.temperature, cli.topp, cli.rng_seed)?;
+    
+    match cli.mode {
+        Mode::Generate  => { println!("Generate Mode!"); },
+        Mode::Chat      => { println!("Chat Mode!"); },
+    }
 
     Ok(())
 }
