@@ -189,34 +189,6 @@ impl<'a> TransformerWeights <'a> {
 }
 
 
-//typedef struct {
-//    // current wave of activations
-//    float *x; // activation at current time stamp (dim,)
-//    float *xb; // same, but inside a residual branch (dim,)
-//    float *xb2; // an additional buffer just for convenience (dim,)
-//    float *hb; // buffer for hidden dimension in the ffn (hidden_dim,)
-//    float *hb2; // buffer for hidden dimension in the ffn (hidden_dim,)
-//    float *q; // query (dim,)
-//    float *k; // key (dim,)
-//    float *v; // value (dim,)
-//    float *att; // buffer for scores/attention values (n_heads, seq_len)
-//    float *logits; // output logits
-//    // kv cache
-//    float* key_cache;   // (layer, seq_len, dim)
-//    float* value_cache; // (layer, seq_len, dim)
-//} RunState;
-//
-//typedef struct {
-//    Config config; // the hyperparameters of the architecture (the blueprint)
-//    TransformerWeights weights; // the weights of the model
-//    RunState state; // buffers for the "wave" of activations in the forward pass
-//    // some more state needed to properly clean up the memory mapping (sigh)
-//    int fd; // file descriptor for memory mapping
-//    float* data; // memory mapped data pointer
-//    ssize_t file_size; // size of the checkpoint file in bytes
-//} Transformer;
-
-
 struct Transformer<'a> {
     config: Config,
     transformer_weights: TransformerWeights<'a>,
@@ -321,7 +293,6 @@ struct TokenIndex<'a> {
     vocab_id: u32,
 }
 
-
 type SortedVocab<'a> = Vec<TokenIndex<'a>>;
 
 trait SortVocab<'a> {
@@ -336,8 +307,6 @@ impl<'a> SortVocab<'a> for SortedVocab<'a> {
     } 
 }
 
-
-
 struct ProbIndex {
     prob: f32,
     index: usize,
@@ -350,16 +319,6 @@ struct Sampler {
     topp: f32,
     rng_state: u64, 
 }
-
-
-// void build_sampler(Sampler* sampler, int vocab_size, float temperature, float topp, unsigned long long rng_seed) {
-//     sampler->vocab_size = vocab_size;
-//     sampler->temperature = temperature;
-//     sampler->topp = topp;
-//     sampler->rng_state = rng_seed;
-//     // buffer only used with nucleus sampling; may not need but it's ~small
-//     sampler->probindex = malloc(sampler->vocab_size * sizeof(ProbIndex));
-// }
 
 impl Sampler {
     fn build(vocab_size: usize, temperature: f32, topp: f32, rng_state: u64) -> io::Result<Self> {
@@ -389,28 +348,41 @@ fn encode(tokenizer: &Tokenizer, text: &str, bos: u8, eos: u8, tokens: u32, n_to
         return; 
     }
 
-
-//    if (t->sorted_vocab == NULL) {
-//        // lazily malloc and sort the vocabulary
-//        t->sorted_vocab = malloc(t->vocab_size * sizeof(TokenIndex));
-//        for (int i = 0; i < t->vocab_size; i++) {
-//            t->sorted_vocab[i].str = t->vocab[i];
-//            t->sorted_vocab[i].id = i;
-//        }
-//        qsort(t->sorted_vocab, t->vocab_size, sizeof(TokenIndex), compare_tokens);
-//    }
-//
-    
-
-
 }
 
+/*
+    Problem #1: Do we need to keep sorting the tokenizer.vocabs? 
+    - By inspection, `qsort` is just being called when `t->sorted_vocab` is uninitialized.
+    - This begs the question on what's stopping us from performing sort with tokenizer.vocabs directly.
+
+    Problem #2: How exactly tokenizer->sorted_vocabs are being used?
+
+    -   `tokenizer->sorted_vocab` is used w.r.t. `str_lookup(str_buffer, t->sorted_vocab, t->vocab_size)`
+    -  `str_lookup` returns an `id`. This might be the numeric representation of the token itself.
+
+    Mapping the calls:
+    
+    M1: qsort calls
+    - On probindex (For top-p sampling)
+    - On t->sorted_vocab (For tokenization)
+
+    M2: t->vocab references
+    - On build_tokenizer function
+    - On free_tokenizer function
+    - On getting `char *piece = t->vocab[token]` at `decode` function (Watch out for this)
+    - When being sorted with a `t->sorted_vocab` reference.
+    
+
+    M3: t->sorted_vocab references 
+
+ 
+*/
 fn generate(transformer: &Transformer, tokenizer: &Tokenizer, sampler: &Sampler, prompt: &str, steps: usize) {
     if prompt.len() == 0 {
         return;
     }
 
-    let num_prompt_tokens: usize = 0;
+    let _num_prompt_tokens: usize = 0;
     let prompt_tokens: Vec<u32> = Vec::with_capacity(prompt.len() + 3 );
 
     // From Karpathy
