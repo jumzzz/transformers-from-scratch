@@ -235,14 +235,14 @@ impl<'a> Transformer<'a> {
                 transformer_weights,
             }
         )
-    } 
+    }
+
+    fn vocab_size(&self) -> usize {
+        self.config.vocab_size
+    }
 }
 
 
-struct TokenIndex {
-    str: String,
-    id: u32,
-}
 
 fn read_bytes_to_float(file_io: &mut File) -> io::Result<f32> {
     let mut buffer = [0u8; mem::size_of::<f32>()];
@@ -265,6 +265,7 @@ fn read_int_bytes_to_usize(file_io: &mut File)  -> io::Result<usize> {
     
     Ok(i32_from_bytes as usize)
 }
+
 
 struct Tokenizer {
     vocabs: Vec<String>,
@@ -315,13 +316,27 @@ impl Tokenizer {
     }
 }
 
-// typedef struct {
-//     int vocab_size;
-//     ProbIndex* probindex; // buffer used in top-p sampling
-//     float temperature;
-//     float topp;
-//     unsigned long long rng_state;
-// }:
+struct TokenIndex<'a> {
+    vocab: &'a String,
+    vocab_id: u32,
+}
+
+
+type SortedVocab<'a> = Vec<TokenIndex<'a>>;
+
+trait SortVocab<'a> {
+    fn build_sorted_vocab(&mut self, tokenizer: &'a Tokenizer);
+}
+
+impl<'a> SortVocab<'a> for SortedVocab<'a> {
+    fn build_sorted_vocab(&mut self, tokenizer: &'a Tokenizer) {
+        for (vocab_id, vocab) in (0..).zip(&tokenizer.vocabs) {
+            self.push(TokenIndex { vocab: &vocab, vocab_id: vocab_id as u32 });
+        }
+    } 
+}
+
+
 
 struct ProbIndex {
     prob: f32,
@@ -368,12 +383,42 @@ enum Mode {
     Chat,
 }
 
-// void generate(Transformer *transformer, Tokenizer *tokenizer, Sampler *sampler, char *prompt, int steps) 
-fn generate() {
+fn encode(tokenizer: &Tokenizer, text: &str, bos: u8, eos: u8, tokens: u32, n_tokens: &Vec<u32>) {
+
+    if text.len() == 0 {
+        return; 
+    }
+
+
+//    if (t->sorted_vocab == NULL) {
+//        // lazily malloc and sort the vocabulary
+//        t->sorted_vocab = malloc(t->vocab_size * sizeof(TokenIndex));
+//        for (int i = 0; i < t->vocab_size; i++) {
+//            t->sorted_vocab[i].str = t->vocab[i];
+//            t->sorted_vocab[i].id = i;
+//        }
+//        qsort(t->sorted_vocab, t->vocab_size, sizeof(TokenIndex), compare_tokens);
+//    }
+//
     
+
+
 }
 
+fn generate(transformer: &Transformer, tokenizer: &Tokenizer, sampler: &Sampler, prompt: &str, steps: usize) {
+    if prompt.len() == 0 {
+        return;
+    }
 
+    let num_prompt_tokens: usize = 0;
+    let prompt_tokens: Vec<u32> = Vec::with_capacity(prompt.len() + 3 );
+
+    // From Karpathy
+    //encode(tokenizer, prompt, 1, 0, prompt_tokens, &num_prompt_tokens);
+
+
+
+}
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -420,19 +465,17 @@ fn main() -> io::Result<()>  {
     let cp_file_size = get_file_size(&cli.checkpoint_path)?; 
     let cp_file = File::open(cli.checkpoint_path)?;
     let cp_mmap = unsafe { MmapOptions::new().map(&cp_file)? };
-//    let transformer = Transformer::load(&cp_mmap, cp_file_size)?; 
-//    let vocab_size = transformer.config.vocab_size;
-    
-//    let config = Config::from_bytes(&cp_mmap)?;
-//    let transformer_weights = TransformerWeights::load(&cp_mmap, &config, cp_file_size);
 
     let transformer = Transformer::load(&cp_mmap, cp_file_size)?;
-    let vocab_size = transformer.config.vocab_size;
+    let vocab_size = transformer.vocab_size();
     
     let _tok_file_size = get_file_size(&cli.tokenizer_path)?;
     let _tok_file = File::open(&cli.tokenizer_path)?;
 
-    let _tokenizer = Tokenizer::load(&cli.tokenizer_path, vocab_size)?;
+    let tokenizer = Tokenizer::load(&cli.tokenizer_path, vocab_size)?;
+    let mut sorted_tokenizer = SortedVocab::with_capacity(tokenizer.vocab_size);
+    sorted_tokenizer.build_sorted_vocab(&tokenizer);
+
     let _sampler = Sampler::build(vocab_size, cli.temperature, cli.topp, cli.rng_seed)?;
     
     match cli.mode {
