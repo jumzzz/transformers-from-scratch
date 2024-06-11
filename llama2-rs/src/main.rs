@@ -342,7 +342,18 @@ enum Mode {
     Chat,
 }
 
-fn encode(tokenizer: &Tokenizer, text: &str, bos: u8, eos: u8, tokens: u32, n_tokens: &Vec<u32>) {
+
+/*
+    How encode works from Karpathy's llama2.c?
+    - if bos != 0, prepend the BOS token (=1)
+    - if eos != 0, prepend the EOS token (=2)
+ 
+    Note:
+    1. bos means "beginning of senetence"
+    2. eos means "end of sentence"
+
+*/
+fn encode(tokenizer: &Tokenizer, text: &str, bos: u8, eos: u8, tokens: &mut Vec<u32>, n_tokens: &mut Vec<u32>) {
 
     if text.len() == 0 {
         return; 
